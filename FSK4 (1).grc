@@ -1,0 +1,737 @@
+options:
+  parameters:
+    author: ''
+    catch_exceptions: 'True'
+    category: '[GRC Hier Blocks]'
+    cmake_opt: ''
+    comment: ''
+    copyright: ''
+    description: ''
+    gen_cmake: 'On'
+    gen_linking: dynamic
+    generate_options: qt_gui
+    hier_block_src_path: '.:'
+    id: FSK4
+    max_nouts: '0'
+    output_language: python
+    placement: (0,0)
+    qt_qss_theme: ''
+    realtime_scheduling: ''
+    run: 'True'
+    run_command: '{python} -u {filename}'
+    run_options: prompt
+    sizing_mode: fixed
+    thread_safe_setters: ''
+    title: Not titled yet
+    window_size: (1000,1000)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [8, 8]
+    rotation: 0
+    state: enabled
+
+blocks:
+- name: samp_rate
+  id: variable
+  parameters:
+    comment: ''
+    value: 2.5e6
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [184, 12]
+    rotation: 0
+    state: enabled
+- name: sps
+  id: variable
+  parameters:
+    comment: ''
+    value: 1e6
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [288, 12.0]
+    rotation: 0
+    state: true
+- name: analog_pll_freqdet_cf_0
+  id: analog_pll_freqdet_cf
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    max_freq: '120000'
+    maxoutbuf: '0'
+    min_freq: '119000'
+    minoutbuf: '0'
+    w: '.06'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [16, 916.0]
+    rotation: 0
+    state: disabled
+- name: blocks_delay_0
+  id: blocks_delay
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    delay: '10'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    num_ports: '1'
+    type: byte
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1048, 392.0]
+    rotation: 0
+    state: disabled
+- name: blocks_file_sink_0
+  id: blocks_file_sink
+  parameters:
+    affinity: ''
+    alias: ''
+    append: 'False'
+    comment: ''
+    file: /home/ben/Documents/rx
+    type: byte
+    unbuffered: 'True'
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1512, 260.0]
+    rotation: 0
+    state: enabled
+- name: channels_channel_model_0
+  id: channels_channel_model
+  parameters:
+    affinity: ''
+    alias: ''
+    block_tags: 'False'
+    comment: ''
+    epsilon: '1.000'
+    freq_offset: '.0001'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    noise_voltage: '0.01'
+    seed: '0'
+    taps: 1 +0j
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [296, 228.0]
+    rotation: 0
+    state: enabled
+- name: epy_block_0
+  id: epy_block
+  parameters:
+    _source_code: "import numpy as np\nfrom gnuradio import gr\n\nclass blk(gr.sync_block):\n\
+      \    def __init__(self, samp_rate=1e6, fsk_deviation=500e3):\n        gr.sync_block.__init__(\n\
+      \            self,\n            name='FSK Modulation',\n            in_sig=[np.uint8],\n\
+      \            out_sig=[np.complex64]\n        )\n        self.samp_rate = samp_rate\n\
+      \        self.fsk_deviation = fsk_deviation\n        self.center_freq = 0\n\
+      \        self.phase_inc0 = 2.0 * np.pi * (self.center_freq - self.fsk_deviation)\
+      \ / self.samp_rate\n        self.phase_inc1 = 2.0 * np.pi * (self.center_freq\
+      \ + self.fsk_deviation) / self.samp_rate\n        self.phase = 0\n        self.counter\
+      \ = 0  # Initialize the counter\n\n    def work(self, input_items, output_items):\n\
+      \        in0 = input_items[0]\n        out = output_items[0]\n\n        for\
+      \ i in range(len(in0)):\n            if in0[i] == 0:\n                self.phase\
+      \ += self.phase_inc0\n            else:\n                self.phase += self.phase_inc1\n\
+      \            out[i] = np.exp(1j * self.phase)\n            if self.phase > 2.0\
+      \ * np.pi:\n                self.phase -= 2.0 * np.pi\n\n        # Print first\
+      \ 10 modulated bits every 1000 iterations\n        #if self.counter % 1000 ==\
+      \ 0:\n         #   print(\"Modulated Bits:\", in0[:0])\n        #self.counter\
+      \ += 1\n\n        return len(output_items[0])\n"
+    affinity: ''
+    alias: ''
+    comment: ''
+    fsk_deviation: samp_rate/10
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    samp_rate: samp_rate
+  states:
+    _io_cache: ('FSK Modulation', 'blk', [('samp_rate', '1000000.0'), ('fsk_deviation',
+      '500000.0')], [('0', 'byte', 1)], [('0', 'complex', 1)], '', ['fsk_deviation',
+      'samp_rate'])
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [280, 132.0]
+    rotation: 0
+    state: true
+- name: epy_block_1
+  id: epy_block
+  parameters:
+    _source_code: "import numpy as np\nfrom gnuradio import gr\n\nclass custom_message_to_bits(gr.basic_block):\n\
+      \    def __init__(self, message=\"Hello from FSK\", interval=10, print_interval=10,\
+      \ preamble=[170, 170]):\n        gr.basic_block.__init__(self,\n           \
+      \ name=\"custom_message_to_bits\",\n            in_sig=None,\n            out_sig=[np.uint8])\n\
+      \n        self.message = message\n        self.interval = int(interval)\n  \
+      \      self.print_interval = int(print_interval)\n        self.preamble = np.array(preamble,\
+      \ dtype=np.uint8)\n        self.message_bytes = np.frombuffer(message.encode('utf-8'),\
+      \ dtype=np.uint8)\n        self.set_output_multiple(8 * (len(self.preamble)\
+      \ + len(self.message_bytes) + 1))  # Output in bits\n        self.counter =\
+      \ 0\n        self.print_counter = 0\n\n    def byte_to_bits(self, byte_array):\n\
+      \        return np.unpackbits(byte_array)\n\n    def general_work(self, input_items,\
+      \ output_items):\n        output = output_items[0]\n        if self.counter\
+      \ % self.interval == 0:\n            header = np.array([len(self.message_bytes)],\
+      \ dtype=np.uint8)\n            packet = np.concatenate((self.preamble, header,\
+      \ self.message_bytes))\n            packet_bits = self.byte_to_bits(packet)\n\
+      \n            if self.print_counter % self.print_interval == 0:\n          \
+      \      print(f\"Header (message length): {header[0]}\")\n                print(f\"\
+      Source Bits: {packet_bits}\")\n\n            self.print_counter += 1\n     \
+      \       output[:len(packet_bits)] = packet_bits\n            produced = len(packet_bits)\n\
+      \        else:\n            zeros_length = 8 * (len(self.preamble) + len(self.message_bytes)\
+      \ + 1)\n            output[:zeros_length] = np.zeros(zeros_length, dtype=np.uint8)\n\
+      \            produced = zeros_length\n        \n        self.counter += 1\n\
+      \        self.consume_each(0)  # No input to consume\n        return produced\n"
+    affinity: ''
+    alias: ''
+    comment: ''
+    interval: '1'
+    maxoutbuf: '0'
+    message: '"Hello"'
+    minoutbuf: '0'
+    preamble: '[0xAB, 0xCD, 0xEF]'
+    print_interval: '10000'
+  states:
+    _io_cache: ('custom_message_to_bits', 'custom_message_to_bits', [('message', "'Hello
+      from FSK'"), ('interval', '10'), ('print_interval', '10'), ('preamble', '[170,
+      170]')], [], [('0', 'byte', 1)], '', ['interval', 'message', 'preamble', 'print_interval'])
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [16, 116.0]
+    rotation: 0
+    state: enabled
+- name: epy_block_12_0
+  id: epy_block
+  parameters:
+    _source_code: "import numpy as np\nfrom gnuradio import gr\n\nclass bits_to_message(gr.sync_block):\n\
+      \    def __init__(self, preamble=[0xAB, 0xCD, 0xEF], header_length=1):\n   \
+      \     gr.sync_block.__init__(\n            self,\n            name='Bits to\
+      \ Message',\n            in_sig=[np.uint8],\n            out_sig=[np.uint8]\n\
+      \        )\n        self.preamble = np.unpackbits(np.array(preamble, dtype=np.uint8))\n\
+      \        self.header_length = header_length\n        self.buffer = np.array([],\
+      \ dtype=np.uint8)\n        self.max_buffer_size = 1000000  # Set a maximum\n\
+      \n    def detect_preamble(self, data):\n        preamble_length = len(self.preamble)\n\
+      \        for i in range(len(data) - preamble_length + 1):\n            if np.array_equal(data[i:i\
+      \ + preamble_length], self.preamble):\n                return i + preamble_length\n\
+      \        return -1\n\n    def work(self, input_items, output_items):\n     \
+      \   self.buffer = np.concatenate((self.buffer, input_items[0]))\n\n        out_data\
+      \ = []\n\n        while True:\n            preamble_index = self.detect_preamble(self.buffer)\n\
+      \            if preamble_index == -1:\n                break\n            \n\
+      \            header_end = preamble_index + self.header_length * 8\n        \
+      \    if header_end > len(self.buffer):\n                break\n            \n\
+      \            header = np.array(self.buffer[preamble_index:header_end], dtype=np.uint8)\n\
+      \            \n            if len(header) == 0:\n                break\n   \
+      \         \n            message_length = np.packbits(header)[0]\n          \
+      \  message_start = header_end\n            message_end = message_start + message_length\
+      \ * 8\n\n            if message_end > len(self.buffer):\n                break\n\
+      \n            message_bits = np.array(self.buffer[message_start:message_end],\
+      \ dtype=np.uint8)\n            \n            if len(message_bits) == 0:\n  \
+      \              break\n            \n            message_bytes = np.packbits(message_bits)\n\
+      \            \n            # Output the raw binary message bytes directly\n\
+      \            out_data.extend(message_bytes)\n            \n            # Print\
+      \ the decoded message for verification\n            try:\n                message_text\
+      \ = message_bytes.tobytes().decode('utf-8')\n                print(\"Decoded\
+      \ message:\", message_text)\n            except UnicodeDecodeError:\n      \
+      \          pass  # Ignore decoding errors\n\n            self.buffer = self.buffer[message_end:]\n\
+      \n        # Prevent buffer from growing indefinitely\n        if len(self.buffer)\
+      \ > self.max_buffer_size:\n            self.buffer = self.buffer[-self.max_buffer_size:]\n\
+      \n        output_items[0][:len(out_data)] = np.array(out_data, dtype=np.uint8)\n\
+      \        self.consume(0, len(input_items[0]))\n        return len(out_data)\n\
+      \n"
+    affinity: ''
+    alias: ''
+    comment: ''
+    header_length: '1'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    preamble: '[0xAB, 0xCD, 0xEF]'
+  states:
+    _io_cache: ('Bits to Message', 'bits_to_message', [('preamble', '[171, 205, 239]'),
+      ('header_length', '1')], [('0', 'byte', 1)], [('0', 'byte', 1)], '', ['header_length',
+      'preamble'])
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1288, 268.0]
+    rotation: 0
+    state: enabled
+- name: epy_block_2
+  id: epy_block
+  parameters:
+    _source_code: "import numpy as np\nfrom gnuradio import gr\n\nclass fsk_demod(gr.sync_block):\n\
+      \    def __init__(self, samp_rate=1e6, fsk_deviation=500e3):\n        gr.sync_block.__init__(\n\
+      \            self,\n            name='FSK Demodulation',\n            in_sig=[np.complex64],\n\
+      \            out_sig=[np.int8]\n        )\n        self.samp_rate = samp_rate\n\
+      \        self.fsk_deviation = fsk_deviation\n        self.counter = 0  # Initialize\
+      \ the counter\n\n    def work(self, input_items, output_items):\n        in0\
+      \ = input_items[0]\n        out = output_items[0]\n\n        for i in range(1,\
+      \ len(in0)):\n            phase_diff = np.angle(in0[i] * np.conj(in0[i-1]))\n\
+      \            out[i] = 1 if phase_diff > 0 else 0\n\n        # Print first 10\
+      \ demodulated bits every 1000 iterations\n        #if self.counter % 1 == 0:\n\
+      \            #print(\"Demodulated Bits:\", out[:0])\n        #self.counter +=\
+      \ 1\n\n        return len(output_items[0])\n"
+    affinity: ''
+    alias: ''
+    comment: ''
+    fsk_deviation: samp_rate/10
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    samp_rate: samp_rate
+  states:
+    _io_cache: ('FSK Demodulation', 'fsk_demod', [('samp_rate', '1000000.0'), ('fsk_deviation',
+      '500000.0')], [('0', 'complex', 1)], [('0', 'byte', 1)], '', ['fsk_deviation',
+      'samp_rate'])
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [984, 268.0]
+    rotation: 0
+    state: enabled
+- name: epy_block_3_0
+  id: epy_block
+  parameters:
+    _source_code: "import numpy as np\nfrom gnuradio import gr\nimport time\n\nclass\
+      \ byte_printer(gr.sync_block):\n    def __init__(self):\n        gr.sync_block.__init__(\n\
+      \            self,\n            name='Byte Printer',\n            in_sig=[np.uint8],\n\
+      \            out_sig=None\n        )\n        self.last_print_time = time.time()\n\
+      \n    def work(self, input_items, output_items):\n        in0 = input_items[0]\n\
+      \        current_time = time.time()\n\n        if current_time - self.last_print_time\
+      \ >= 2:\n            print(f\"Received Bytes: {in0}\")\n            self.last_print_time\
+      \ = current_time\n\n        return len(in0)\n\n"
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    _io_cache: ('Byte Printer', 'byte_printer', [], [('0', 'byte', 1)], [], '', [])
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1176, 176.0]
+    rotation: 0
+    state: disabled
+- name: epy_block_4
+  id: epy_block
+  parameters:
+    _source_code: "import numpy as np\nfrom gnuradio import gr\nimport pmt\n\nclass\
+      \ custom_message_to_bits(gr.basic_block):\n    def __init__(self, interval=10,\
+      \ print_interval=10, preamble=[170, 170], file_path=\"msg.txt\"):\n        gr.basic_block.__init__(self,\n\
+      \            name=\"custom_message_to_bits\",\n            in_sig=None,\n  \
+      \          out_sig=[np.uint8])\n\n        self.interval = int(interval)\n  \
+      \      self.print_interval = int(print_interval)\n        self.preamble = np.array(preamble,\
+      \ dtype=np.uint8)\n        self.file_path = file_path\n        self.set_output_multiple(8\
+      \ * (len(self.preamble) + 1))  # Output in bits\n        self.counter = 0\n\
+      \        self.print_counter = 0\n        self.message_length = 0\n        self.update_message()\n\
+      \n        # Define a message port\n        self.message_port_register_out(pmt.intern(\"\
+      message_length\"))\n\n    def update_message(self):\n        try:\n        \
+      \    with open(self.file_path, \"r\") as file:\n                message = file.read().strip()\n\
+      \            self.message_bytes = np.frombuffer(message.encode('utf-8'), dtype=np.uint8)\n\
+      \            self.message_length = len(self.message_bytes)\n            self.set_output_multiple(8\
+      \ * (len(self.preamble) + self.message_length + 1))\n        except FileNotFoundError:\n\
+      \            print(\"Message file not found. Using default message.\")\n   \
+      \         self.message_bytes = np.frombuffer(\"Default Message\".encode('utf-8'),\
+      \ dtype=np.uint8)\n            self.message_length = len(self.message_bytes)\n\
+      \n    def byte_to_bits(self, byte_array):\n        return np.unpackbits(byte_array)\n\
+      \n    def general_work(self, input_items, output_items):\n        output = output_items[0]\n\
+      \        if self.counter % self.interval == 0:\n            self.update_message()\
+      \  # Update message from file each interval\n            header = np.array([self.message_length],\
+      \ dtype=np.uint8)\n            packet = np.concatenate((self.preamble, header,\
+      \ self.message_bytes))\n            packet_bits = self.byte_to_bits(packet)\n\
+      \n            if self.print_counter % self.print_interval == 0:\n          \
+      \      print(f\"Header (message length): {header[0]}\")\n                print(f\"\
+      Source Bits: {packet_bits}\")\n\n            # Send the message length as a\
+      \ message\n            self.message_port_pub(pmt.intern(\"message_length\"),\
+      \ pmt.from_long(self.message_length))\n\n            self.print_counter += 1\n\
+      \            output[:len(packet_bits)] = packet_bits\n            produced =\
+      \ len(packet_bits)\n        else:\n            zeros_length = 8 * (len(self.preamble)\
+      \ + self.message_length + 1)\n            output[:zeros_length] = np.zeros(zeros_length,\
+      \ dtype=np.uint8)\n            produced = zeros_length\n\n        self.counter\
+      \ += 1\n        self.consume_each(0)  # No input to consume\n        return\
+      \ produced\n\n"
+    affinity: ''
+    alias: ''
+    comment: ''
+    file_path: '"/home/ben/Documents/test.txt"'
+    interval: '1'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    preamble: '[0xAB, 0xCD, 0xEF]'
+    print_interval: '10000'
+  states:
+    _io_cache: ('custom_message_to_bits', 'custom_message_to_bits', [('interval',
+      '10'), ('print_interval', '10'), ('preamble', '[170, 170]'), ('file_path', "'msg.txt'")],
+      [], [('0', 'byte', 1), ('message_length', 'message', 1)], '', ['file_path',
+      'interval', 'preamble', 'print_interval'])
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [16, 804.0]
+    rotation: 0
+    state: disabled
+- name: epy_block_5
+  id: epy_block
+  parameters:
+    _source_code: "import numpy as np\nfrom gnuradio import gr\n\nclass custom_message_to_bits(gr.basic_block):\n\
+      \    def __init__(self, interval=10, print_interval=10, preamble=[170, 170],\
+      \ file_path=\"msg.txt\"):\n        gr.basic_block.__init__(self,\n         \
+      \   name=\"custom_message_to_bits\",\n            in_sig=None,\n           \
+      \ out_sig=[np.uint8])\n\n        self.interval = int(interval)\n        self.print_interval\
+      \ = int(print_interval)\n        self.preamble = np.array(preamble, dtype=np.uint8)\n\
+      \        self.file_path = file_path\n        self.set_output_multiple(8 * (len(self.preamble)\
+      \ + 1))  # Output in bits\n        self.counter = 0\n        self.print_counter\
+      \ = 0\n        self.update_message()\n\n    def update_message(self):\n    \
+      \    try:\n            with open(self.file_path, \"r\") as file:\n         \
+      \       message = file.read().strip()\n            self.message_bytes = np.frombuffer(message.encode('utf-8'),\
+      \ dtype=np.uint8)\n            self.set_output_multiple(8 * (len(self.preamble)\
+      \ + len(self.message_bytes) + 1))\n        except FileNotFoundError:\n     \
+      \       print(\"Message file not found. Using default message.\")\n        \
+      \    self.message_bytes = np.frombuffer(\"Default Message\".encode('utf-8'),\
+      \ dtype=np.uint8)\n\n    def byte_to_bits(self, byte_array):\n        return\
+      \ np.unpackbits(byte_array)\n\n    def general_work(self, input_items, output_items):\n\
+      \        output = output_items[0]\n        if self.counter % self.interval ==\
+      \ 0:\n            self.update_message()  # Update message from file each interval\n\
+      \            header = np.array([len(self.message_bytes)], dtype=np.uint8)\n\
+      \            packet = np.concatenate((self.preamble, header, self.message_bytes))\n\
+      \            packet_bits = self.byte_to_bits(packet)\n\n            if self.print_counter\
+      \ % self.print_interval == 0:\n                print(f\"Header (message length):\
+      \ {header[0]}\")\n                print(f\"Source Bits: {packet_bits}\")\n\n\
+      \            self.print_counter += 1\n            output[:len(packet_bits)]\
+      \ = packet_bits\n            produced = len(packet_bits)\n        else:\n  \
+      \          zeros_length = 8 * (len(self.preamble) + len(self.message_bytes)\
+      \ + 1)\n            output[:zeros_length] = np.zeros(zeros_length, dtype=np.uint8)\n\
+      \            produced = zeros_length\n\n        self.counter += 1\n        self.consume_each(0)\
+      \  # No input to consume\n        return produced\n"
+    affinity: ''
+    alias: ''
+    comment: ''
+    file_path: '"/home/ben/Documents/test"'
+    interval: '1'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    preamble: '[0xAB, 0xCD, 0xEF]'
+    print_interval: '10000'
+  states:
+    _io_cache: ('custom_message_to_bits', 'custom_message_to_bits', [('interval',
+      '10'), ('print_interval', '10'), ('preamble', '[170, 170]'), ('file_path', "'msg.txt'")],
+      [], [('0', 'byte', 1)], '', ['file_path', 'interval', 'preamble', 'print_interval'])
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [24, 220.0]
+    rotation: 0
+    state: disabled
+- name: qtgui_freq_sink_x_0
+  id: qtgui_freq_sink_x
+  parameters:
+    affinity: ''
+    alias: ''
+    alpha1: '1.0'
+    alpha10: '1.0'
+    alpha2: '1.0'
+    alpha3: '1.0'
+    alpha4: '1.0'
+    alpha5: '1.0'
+    alpha6: '1.0'
+    alpha7: '1.0'
+    alpha8: '1.0'
+    alpha9: '1.0'
+    autoscale: 'True'
+    average: '1.0'
+    axislabels: 'True'
+    bw: samp_rate
+    color1: '"blue"'
+    color10: '"dark blue"'
+    color2: '"red"'
+    color3: '"green"'
+    color4: '"black"'
+    color5: '"cyan"'
+    color6: '"magenta"'
+    color7: '"yellow"'
+    color8: '"dark red"'
+    color9: '"dark green"'
+    comment: ''
+    ctrlpanel: 'False'
+    fc: 915e6
+    fftsize: '1024'
+    freqhalf: 'True'
+    grid: 'False'
+    gui_hint: ''
+    label: Relative Gain
+    label1: ''
+    label10: ''''''
+    label2: ''''''
+    label3: ''''''
+    label4: ''''''
+    label5: ''''''
+    label6: ''''''
+    label7: ''''''
+    label8: ''''''
+    label9: ''''''
+    legend: 'True'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    name: '"Frequency Sink Pre Channel-Model"'
+    nconnections: '1'
+    norm_window: 'False'
+    showports: 'False'
+    tr_chan: '0'
+    tr_level: '0.0'
+    tr_mode: qtgui.TRIG_MODE_FREE
+    tr_tag: '""'
+    type: complex
+    units: dB
+    update_time: '0.10'
+    width1: '1'
+    width10: '1'
+    width2: '1'
+    width3: '1'
+    width4: '1'
+    width5: '1'
+    width6: '1'
+    width7: '1'
+    width8: '1'
+    width9: '1'
+    wintype: window.WIN_BLACKMAN_hARRIS
+    ymax: '10'
+    ymin: '-140'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [408, 4.0]
+    rotation: 0
+    state: disabled
+- name: qtgui_freq_sink_x_0_0
+  id: qtgui_freq_sink_x
+  parameters:
+    affinity: ''
+    alias: ''
+    alpha1: '1.0'
+    alpha10: '1.0'
+    alpha2: '1.0'
+    alpha3: '1.0'
+    alpha4: '1.0'
+    alpha5: '1.0'
+    alpha6: '1.0'
+    alpha7: '1.0'
+    alpha8: '1.0'
+    alpha9: '1.0'
+    autoscale: 'True'
+    average: '1.0'
+    axislabels: 'True'
+    bw: samp_rate
+    color1: '"blue"'
+    color10: '"dark blue"'
+    color2: '"red"'
+    color3: '"green"'
+    color4: '"black"'
+    color5: '"cyan"'
+    color6: '"magenta"'
+    color7: '"yellow"'
+    color8: '"dark red"'
+    color9: '"dark green"'
+    comment: ''
+    ctrlpanel: 'False'
+    fc: 915e6
+    fftsize: '1024'
+    freqhalf: 'True'
+    grid: 'False'
+    gui_hint: ''
+    label: Relative Gain
+    label1: ''
+    label10: ''''''
+    label2: ''''''
+    label3: ''''''
+    label4: ''''''
+    label5: ''''''
+    label6: ''''''
+    label7: ''''''
+    label8: ''''''
+    label9: ''''''
+    legend: 'True'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    name: '"Frequency Sink Post Channel-Model"'
+    nconnections: '1'
+    norm_window: 'False'
+    showports: 'False'
+    tr_chan: '0'
+    tr_level: '0.0'
+    tr_mode: qtgui.TRIG_MODE_FREE
+    tr_tag: '""'
+    type: complex
+    units: dB
+    update_time: '0.10'
+    width1: '1'
+    width10: '1'
+    width2: '1'
+    width3: '1'
+    width4: '1'
+    width5: '1'
+    width6: '1'
+    width7: '1'
+    width8: '1'
+    width9: '1'
+    wintype: window.WIN_BLACKMAN_hARRIS
+    ymax: '10'
+    ymin: '-140'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1024, 20.0]
+    rotation: 0
+    state: enabled
+- name: root_raised_cosine_filter_0
+  id: root_raised_cosine_filter
+  parameters:
+    affinity: ''
+    alias: ''
+    alpha: '1'
+    comment: ''
+    decim: '10'
+    gain: '1'
+    interp: '100'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    ntaps: '1000'
+    samp_rate: samp_rate
+    sym_rate: samp_rate/5
+    type: interp_fir_filter_ccf
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [528, 100.0]
+    rotation: 0
+    state: enabled
+- name: root_raised_cosine_filter_0_0
+  id: root_raised_cosine_filter
+  parameters:
+    affinity: ''
+    alias: ''
+    alpha: '1'
+    comment: ''
+    decim: '100'
+    gain: '1'
+    interp: '1'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    ntaps: '1000'
+    samp_rate: samp_rate
+    sym_rate: samp_rate/5
+    type: fir_filter_ccf
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [664, 236.0]
+    rotation: 0
+    state: enabled
+- name: soapy_limesdr_sink_0
+  id: soapy_limesdr_sink
+  parameters:
+    affinity: ''
+    alias: ''
+    bandwidth: samp_rate
+    center_freq: 915e6
+    comment: ''
+    dev_args: ''
+    freq_correction: '0'
+    gain: '10'
+    samp_rate: samp_rate
+    type: fc32
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [712, 24.0]
+    rotation: 0
+    state: disabled
+- name: soapy_limesdr_source_0
+  id: soapy_limesdr_source
+  parameters:
+    affinity: ''
+    alias: ''
+    bandwidth: samp_rate
+    center_freq: 915e6
+    comment: ''
+    dev_args: ''
+    freq_correction: '0'
+    gain: '0'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    samp_rate: samp_rate
+    type: fc32
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [280, 452.0]
+    rotation: 0
+    state: disabled
+- name: virtual_sink_0
+  id: virtual_sink
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: data
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [856, 76.0]
+    rotation: 0
+    state: disabled
+- name: virtual_source_0
+  id: virtual_source
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: data
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [304, 396.0]
+    rotation: 0
+    state: disabled
+
+connections:
+- [blocks_delay_0, '0', epy_block_12_0, '0']
+- [channels_channel_model_0, '0', root_raised_cosine_filter_0_0, '0']
+- [epy_block_0, '0', root_raised_cosine_filter_0, '0']
+- [epy_block_1, '0', epy_block_0, '0']
+- [epy_block_12_0, '0', blocks_file_sink_0, '0']
+- [epy_block_2, '0', blocks_delay_0, '0']
+- [epy_block_2, '0', epy_block_12_0, '0']
+- [epy_block_2, '0', epy_block_3_0, '0']
+- [epy_block_5, '0', epy_block_0, '0']
+- [root_raised_cosine_filter_0, '0', channels_channel_model_0, '0']
+- [root_raised_cosine_filter_0, '0', qtgui_freq_sink_x_0, '0']
+- [root_raised_cosine_filter_0, '0', soapy_limesdr_sink_0, '0']
+- [root_raised_cosine_filter_0, '0', virtual_sink_0, '0']
+- [root_raised_cosine_filter_0_0, '0', epy_block_2, '0']
+- [root_raised_cosine_filter_0_0, '0', qtgui_freq_sink_x_0_0, '0']
+- [soapy_limesdr_source_0, '0', root_raised_cosine_filter_0_0, '0']
+- [virtual_source_0, '0', root_raised_cosine_filter_0_0, '0']
+
+metadata:
+  file_format: 1
+  grc_version: 3.10.3.0
