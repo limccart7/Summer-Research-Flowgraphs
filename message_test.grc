@@ -1,0 +1,99 @@
+options:
+  parameters:
+    author: root
+    catch_exceptions: 'True'
+    category: '[GRC Hier Blocks]'
+    cmake_opt: ''
+    comment: ''
+    copyright: ''
+    description: ''
+    gen_cmake: 'On'
+    gen_linking: dynamic
+    generate_options: no_gui
+    hier_block_src_path: '.:'
+    id: message_test
+    max_nouts: '0'
+    output_language: python
+    placement: (0,0)
+    qt_qss_theme: ''
+    realtime_scheduling: ''
+    run: 'True'
+    run_command: '{python} -u {filename}'
+    run_options: prompt
+    sizing_mode: fixed
+    thread_safe_setters: ''
+    title: Not titled yet
+    window_size: (1000,1000)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [8, 8]
+    rotation: 0
+    state: enabled
+
+blocks:
+- name: samp_rate
+  id: variable
+  parameters:
+    comment: ''
+    value: '32000'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [184, 12]
+    rotation: 0
+    state: enabled
+- name: blocks_message_debug_0
+  id: blocks_message_debug
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    en_uvec: 'True'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [680, 208.0]
+    rotation: 0
+    state: true
+- name: epy_block_0
+  id: epy_block
+  parameters:
+    _source_code: "import time\nimport tkinter as tk\nfrom tkinter import simpledialog\n\
+      from gnuradio import gr\nimport pmt\n\nclass message_prompt(gr.sync_block):\n\
+      \    def __init__(self):\n        gr.sync_block.__init__(\n            self,\n\
+      \            name=\"message_prompt\",\n            in_sig=None,\n          \
+      \  out_sig=None,\n        )\n        self.message_port_register_out(pmt.intern(\"\
+      out\"))\n        self.root = tk.Tk()\n        self.root.withdraw()  # Hide the\
+      \ main Tkinter window\n        self.schedule_next_prompt()\n\n    def schedule_next_prompt(self):\n\
+      \        self.root.after(0, self.prompt_for_message)\n\n    def prompt_for_message(self):\n\
+      \        payload = simpledialog.askstring(\"Input\", \"Enter payload:\")\n \
+      \       if payload is not None:\n            message = pmt.intern(payload)\n\
+      \            for _ in range(3):\n                self.message_port_pub(pmt.intern(\"\
+      out\"), message)\n                time.sleep(2)\n        self.schedule_next_prompt()\n\
+      \n    def work(self, input_items, output_items):\n        return len(output_items)\n\
+      \n"
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    _io_cache: ('message_prompt', 'message_prompt', [], [], [('out', 'message', 1)],
+      '', [])
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [80, 200.0]
+    rotation: 0
+    state: true
+
+connections:
+- [epy_block_0, out, blocks_message_debug_0, print]
+
+metadata:
+  file_format: 1
+  grc_version: 3.10.3.0
