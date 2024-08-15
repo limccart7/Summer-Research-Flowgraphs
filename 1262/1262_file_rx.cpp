@@ -16,85 +16,103 @@ PiHal* hal = new PiHal(0);
 SX1262 radio = new Module(hal, 10, 2, 21, 0);
 
 int main() {
-  // Initialize the radio module with XTAL configuration
-  printf("[SX1262] Initializing ... ");
-  int state = radio.begin(915.0, 125.0, 7, 5, 0, 10, 8, 0.0, false);
-  if (state != RADIOLIB_ERR_NONE) {
-    printf("Initialization failed, code %d\n", state);
-    return 1;
-  }
-  printf("Initialization success!\n");
+  //test params
+  float BW[] = {62.5, 125.0, 250.0};
+  int SF[] = {7, 9, 11};
+  int CR[] = {5, 8};
 
-  // Start receiving packets
-  printf("[SX1262] Starting receiver ... ");
-  state = radio.startReceive(RADIOLIB_SX126X_RX_TIMEOUT_INF);
-  if (state != RADIOLIB_ERR_NONE) {
-    printf("Start receive failed, code %d\n", state);
-    return 1;
-  }
-  printf("Receiver started!\n");
-
-  // Open file for logging received data
-  std::ofstream outfile("rx_data.txt", std::ios::out);
-  if (!outfile.is_open()) {
-    printf("Failed to open file for writing\n");
-    return 1;
-  }
-
-  int packet_count = 0;
-
-  // Disable terminal buffering for key press detection
+  int state;
+  int packet_count;
+  std::ofstream outfile;
+  
+  //space bar for test advancing
   struct termios oldt, newt;
   tcgetattr(STDIN_FILENO, &oldt);
   newt = oldt;
   newt.c_lflag &= ~(ICANON | ECHO);
   tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
-  // Main loop
-  while (true) {
-    // Check if a packet has been received
-    if (radio.getIrqStatus() & RADIOLIB_SX126X_IRQ_RX_DONE) {
-      // Read the received packet
-      uint8_t data[64];
-      size_t len = sizeof(data);
-      state = radio.readData(data, len);
-      if (state == RADIOLIB_ERR_NONE) {
-        // Successfully read the data
-        packet_count++;
-        printf("Received packet #%d: %s\n", packet_count, data);
+  //loop through the BW, SF, and CR values
+  for (int cr_idx = 0; cr_idx < 2; cr_idx++) {
+    for (int sf_idx = 0; sf_idx < 3; sf_idx++) {
+      for (int bw_idx = 0; bw_idx < 3; bw_idx++) {
 
-        // Write received packet to the file
-        outfile << "Packet #" << packet_count << ": " << data << std::endl;
-      } else {
-        printf("Failed to read data, code %d\n", state);
-      }
+        //make file name
+        std::string filename = "rx_data_" + std::to_string(SF[sf_idx]) + "_" + std::to_string((int)BW[bw_idx]) + "_" + std::to_string(CR[cr_idx]) + ".txt";
+        outfile.open(filename);
+        if (!outfile.is_open()) {
+          printf("Failed to open file %s for writing\n", filename.c_str());
+          return 1;
+        }
 
-      // Restart the receiver
-      state = radio.startReceive(RADIOLIB_SX126X_RX_TIMEOUT_INF);
-      if (state != RADIOLIB_ERR_NONE) {
-        printf("Restart receive failed, code %d\n", state);
-        break;
+        //init with current values
+        printf("[SX1262] Initializing ... \n");
+        state = radio.begin(915.0, BW[bw_idx], SF[sf_idx], CR[cr_idx], 18, 10, 8, 0.0, false);
+        if (state != RADIOLIB_ERR_NONE) {
+          printf("Initialization failed, code %d\n", state);
+          return 1;
+        }
+        printf("Initialization success for SF=%d, BW=%.1f, CR=%d\n", SF[sf_idx], BW[bw_idx], CR[cr_idx]);
+
+        //start receiving
+        printf("[SX1262] Starting receiver ... ");
+        state = radio.startReceive(RADIOLIB_SX126X_RX_TIMEOUT_INF);
+        if (state != RADIOLIB_ERR_NONE) {
+          printf("Start receive failed, code %d\n", state);
+          return 1;
+        }
+        printf("Receiver started!\n");
+
+        packet_count = 0;
+
+        //main waiting loop -> space breaks us out onto next file
+        while (true) {
+          //check if interrupt -> packet rcv
+          if (radio.getIrqStatus() & RADIOLIB_SX126X_IRQ_RX_DONE) {
+            //readbuffer
+            uint8_t data[64];
+            size_t len = sizeof(data);
+            state = radio.readData(data, len);
+            if (state == RADIOLIB_ERR_NONE) {
+              //success
+              packet_count++;
+              printf("Received packet #%d: %s\n", packet_count, data);
+
+              //write out to file
+              outfile << "Packet #" << packet_count << ": " << data << std::endl;
+            } else {
+              //failed, not sure why this would happen
+              printf("Failed to read data, code %d\n", state);
+            }
+
+            //restart rcvr
+            state = radio.startReceive(RADIOLIB_SX126X_RX_TIMEOUT_INF);
+            if (state != RADIOLIB_ERR_NONE) {
+              printf("Restart receive failed, code %d\n", state);
+              break;
+            }
+          }
+
+          //check if space bar is pressed to advance to the next test
+          if (std::cin.peek() == ' ') {
+            printf("Advancing to next test...\n");
+            break;
+          }
+
+          //smaller delay than tx delay
+          hal->delay(100);
+        }
+
+        //test done, show results in terminal
+        outfile.close();
+        printf("Total packets received for SF=%d, BW=%.1f, CR=%d: %d\n", SF[sf_idx], BW[bw_idx], CR[cr_idx], packet_count);
+
       }
     }
-
-    // Check if space bar is pressed to exit the loop
-    if (std::cin.peek() == ' ') {
-      printf("Exiting...\n");
-      break;
-    }
-
-    // Small delay to avoid busy waiting
-    hal->delay(100);
   }
 
-  // Restore terminal settings
+  //restore terminal settings
   tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-
-  // Close the file
-  outfile.close();
-
-  // Print the final packet count
-  printf("Total packets received: %d\n", packet_count);
 
   return 0;
 }
