@@ -18,7 +18,7 @@ int main() {
   // Initialize the radio module with XTAL configuration
   printf("[SX1262] Initializing ... ");
   //int state = radio.beginFSK(915.0, 4.8, 125.0, 467.0, 10.0, 16.0, 0.0, false);
-  int state = radio.begin(915.0, 125.0, 7, 5, 18, 10, 8, 0.0, false);
+  int state = radio.begin(915.0, 125.0, 7, 5, 0, 10, 8, 0.0, false);
   if (state != RADIOLIB_ERR_NONE) {
     printf("Initialization failed, code %d\n", state);
     return 1;
