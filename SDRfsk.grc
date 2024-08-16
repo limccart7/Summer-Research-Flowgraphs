@@ -110,7 +110,24 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1064, 360.0]
+    coordinate: [1080, 448.0]
+    rotation: 0
+    state: enabled
+- name: blocks_message_strobe_0
+  id: blocks_message_strobe
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    msg: pmt.intern("TEST")
+    period: '10000'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [936, 356.0]
     rotation: 0
     state: enabled
 - name: blocks_probe_rate_0
@@ -133,6 +150,40 @@ blocks:
     coordinate: [304, 980.0]
     rotation: 0
     state: disabled
+- name: epy_block_0
+  id: epy_block
+  parameters:
+    _source_code: "import numpy as np\nfrom gnuradio import gr\nimport pmt\n\nclass\
+      \ pmt_to_string_pass(gr.basic_block):\n    def __init__(self):\n        gr.basic_block.__init__(self,\n\
+      \            name=\"PMT to String Pass Through\",\n            in_sig=None,\n\
+      \            out_sig=None)\n\n        # Register input and output message ports\n\
+      \        self.message_port_register_in(pmt.intern(\"in\"))\n        self.message_port_register_out(pmt.intern(\"\
+      out\"))\n        self.set_msg_handler(pmt.intern(\"in\"), self.handle_pmt_msg)\n\
+      \n    def handle_pmt_msg(self, msg):\n        # Check if the message is a pair\n\
+      \        if pmt.is_pair(msg):\n            # Extract the payload (cdr)\n   \
+      \         payload = pmt.cdr(msg)\n            # Check if the payload is a byte\
+      \ vector\n            if pmt.is_u8vector(payload):\n                # Extract\
+      \ the byte array from the PMT\n                byte_array = pmt.u8vector_elements(payload)\n\
+      \                # Convert the byte array to a string\n                decoded_message\
+      \ = ''.join(chr(b) for b in byte_array)\n                # Convert the string\
+      \ back to a PMT\n                new_msg = pmt.cons(pmt.car(msg), pmt.intern(decoded_message))\n\
+      \                # Pass the new message to the output port\n               \
+      \ self.message_port_pub(pmt.intern(\"out\"), new_msg)\n\n# To use this block\
+      \ in GNU Radio, you would add it to your flowgraph.\n"
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    _io_cache: ('PMT to String Pass Through', 'pmt_to_string_pass', [], [('in', 'message',
+      1)], [('out', 'message', 1)], '', [])
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [744, 432.0]
+    rotation: 0
+    state: enabled
 - name: epy_block_1
   id: epy_block
   parameters:
@@ -145,12 +196,11 @@ blocks:
       \ = 255\n        self.set_output_multiple(8 * (len(self.preamble) + self.chunk_size\
       \ + 1 + 1))  # Output in bits, including CRC\n        self.chunks = []\n   \
       \     self.current_chunk_index = 0\n        self.message_port_register_in(pmt.intern(\"\
-      crc_pass\"))\n        self.message_port_register_in(pmt.intern(\"crc_fail\"\
-      ))\n        self.set_msg_handler(pmt.intern(\"crc_pass\"), self.handle_crc_pass)\n\
-      \        self.set_msg_handler(pmt.intern(\"crc_fail\"), self.handle_crc_fail)\n\
+      crc_status\"))\n        self.set_msg_handler(pmt.intern(\"crc_status\"), self.handle_crc_status)\n\
       \        self.message_port_register_out(pmt.intern(\"out\"))\n        self.update_message()\n\
-      \        self.send_initial_chunk()  # Send the first chunk immediately\n\n \
-      \   def update_message(self):\n        try:\n            with open(self.file_path,\
+      \        self.transmission_complete = False  # Flag to indicate transmission\
+      \ complete\n        self.send_initial_chunk()  # Send the first chunk immediately\n\
+      \n    def update_message(self):\n        try:\n            with open(self.file_path,\
       \ \"r\") as file:\n                message = file.read().strip()\n         \
       \   message_bytes = np.frombuffer(message.encode('utf-8'), dtype=np.uint8)\n\
       \            self.chunks = [self.add_crc(message_bytes[i:i + self.chunk_size])\
@@ -164,36 +214,38 @@ blocks:
       \      crc = (crc << 1) ^ 0x07  # Generator polynomial\n                else:\n\
       \                    crc <<= 1\n            crc &= 0xFF\n        crc_bytes =\
       \ np.array([crc], dtype=np.uint8)\n        return np.concatenate((chunk, crc_bytes))\n\
-      \n    def byte_to_bits(self, byte_array):\n        \"\"\"Converts a byte array\
-      \ to a bit array.\"\"\"\n        return np.unpackbits(byte_array)\n\n    def\
-      \ send_initial_chunk(self):\n        if self.current_chunk_index < len(self.chunks):\n\
+      \n    def send_initial_chunk(self):\n        if self.current_chunk_index < len(self.chunks):\n\
       \            chunk_data = pmt.init_u8vector(len(self.chunks[self.current_chunk_index]),\
       \ self.chunks[self.current_chunk_index])\n            chunk_ready_msg = pmt.cons(pmt.intern(\"\
       chunk_ready\"), chunk_data)\n            self.message_port_pub(pmt.intern(\"\
-      out\"), chunk_ready_msg)\n            print(f\"Sent initial chunk {self.current_chunk_index}.\"\
-      )\n\n    def general_work(self, input_items, output_items):\n        output\
-      \ = output_items[0]\n\n        if self.current_chunk_index < len(self.chunks):\n\
-      \            chunk = self.chunks[self.current_chunk_index]\n            payload_length\
-      \ = len(chunk) - 1  # Exclude CRC length from payload length\n            header\
-      \ = np.array([payload_length], dtype=np.uint8)\n            packet = np.concatenate((self.preamble,\
-      \ header, chunk))\n            packet_bits = self.byte_to_bits(packet)\n\n \
-      \           output[:len(packet_bits)] = packet_bits\n            produced =\
-      \ len(packet_bits)\n        else:\n            zeros_length = 8 * (len(self.preamble)\
-      \ + self.chunk_size + 1 + 1)  # Including CRC\n            output[:zeros_length]\
-      \ = np.zeros(zeros_length, dtype=np.uint8)\n            produced = zeros_length\n\
-      \n        self.consume_each(0)  # No input to consume\n        return produced\n\
-      \n    def handle_crc_pass(self, msg):\n        if self.current_chunk_index <\
-      \ len(self.chunks) - 1:\n            self.current_chunk_index += 1\n       \
-      \     print(f\"CRC passed for chunk {self.current_chunk_index}. Moving to the\
-      \ next chunk.\")\n            \n            # Send the \"chunk_ready\" message\
-      \ along with the chunk data\n            chunk_data = pmt.init_u8vector(len(self.chunks[self.current_chunk_index]),\
-      \ self.chunks[self.current_chunk_index])\n            chunk_ready_msg = pmt.cons(pmt.intern(\"\
-      chunk_ready\"), chunk_data)\n            self.message_port_pub(pmt.intern(\"\
-      out\"), chunk_ready_msg)\n            \n        else:\n            print(\"\
-      File transmission complete.\")\n            self.current_chunk_index = len(self.chunks)\
-      \  # To ensure transmission stops\n\n    def handle_crc_fail(self, msg):\n \
-      \       print(f\"Resending chunk {self.current_chunk_index} due to CRC failure.\"\
-      )\n"
+      out\"), chunk_ready_msg)\n            #print(f\"Sent initial chunk {self.current_chunk_index}.\"\
+      )\n\n    def general_work(self, input_items, output_items):\n        if self.transmission_complete:\n\
+      \            return -1  # Stop the block and flowgraph\n\n        output = output_items[0]\n\
+      \n        if self.current_chunk_index < len(self.chunks):\n            chunk\
+      \ = self.chunks[self.current_chunk_index]\n            payload_length = len(chunk)\
+      \ - 1  # Exclude CRC length from payload length\n            header = np.array([payload_length],\
+      \ dtype=np.uint8)\n            packet = np.concatenate((self.preamble, header,\
+      \ chunk))\n            packet_bits = self.byte_to_bits(packet)\n\n         \
+      \   output[:len(packet_bits)] = packet_bits\n            produced = len(packet_bits)\n\
+      \        else:\n            print(\"File transmission complete.\")\n       \
+      \     self.transmission_complete = True\n            return -1  # Signal to\
+      \ GNU Radio to stop the flowgraph\n\n        self.consume_each(0)  # No input\
+      \ to consume\n        return produced\n\n    def byte_to_bits(self, byte_array):\n\
+      \        \"\"\"Converts a byte array to a bit array.\"\"\"\n        return np.unpackbits(byte_array)\n\
+      \n    def handle_crc_status(self, msg):\n        if self.transmission_complete:\n\
+      \            return  # Do nothing if transmission is complete\n\n        status\
+      \ = pmt.symbol_to_string(pmt.car(msg))\n\n        if status == \"crc_pass\"\
+      :\n            if self.current_chunk_index < len(self.chunks) - 1:\n       \
+      \         self.current_chunk_index += 1\n                print(f\"CRC passed\
+      \ for chunk {self.current_chunk_index}. Moving to the next chunk.\")\n     \
+      \           \n                # Send the \"chunk_ready\" message along with\
+      \ the chunk data\n                chunk_data = pmt.init_u8vector(len(self.chunks[self.current_chunk_index]),\
+      \ self.chunks[self.current_chunk_index])\n                chunk_ready_msg =\
+      \ pmt.cons(pmt.intern(\"chunk_ready\"), chunk_data)\n                self.message_port_pub(pmt.intern(\"\
+      out\"), chunk_ready_msg)\n                \n            else:\n            \
+      \    print(\"File transmission complete.\")\n                self.transmission_complete\
+      \ = True\n\n        elif status == \"crc_fail\":\n            print(f\"Resending\
+      \ chunk {self.current_chunk_index} due to CRC failure.\")\n"
     affinity: ''
     alias: ''
     comment: ''
@@ -203,13 +255,12 @@ blocks:
     preamble: '[0xAB, 0xCD, 0xEF, 0xA1, 0x54, 0xEB, 0xBA, 0xDC, 0xFF]'
   states:
     _io_cache: ('custom_message_to_bits', 'custom_message_to_bits', [('preamble',
-      '[171, 205, 239]'), ('file_path', "'msg.txt'")], [('crc_pass', 'message', 1),
-      ('crc_fail', 'message', 1)], [('0', 'byte', 1), ('out', 'message', 1)], '',
-      ['file_path', 'preamble'])
+      '[171, 205, 239]'), ('file_path', "'msg.txt'")], [('crc_status', 'message',
+      1)], [('0', 'byte', 1), ('out', 'message', 1)], '', ['file_path', 'preamble'])
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [56, 144.0]
+    coordinate: [80, 112.0]
     rotation: 0
     state: enabled
 - name: epy_block_12_0_0
@@ -296,9 +347,88 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [376, 360.0]
+    coordinate: [368, 368.0]
     rotation: 0
     state: enabled
+- name: epy_block_1_0
+  id: epy_block
+  parameters:
+    _source_code: "import numpy as np\nfrom gnuradio import gr\nimport pmt\n\nclass\
+      \ custom_message_to_bits(gr.basic_block):\n    def __init__(self, preamble=[0xAB,\
+      \ 0xCD, 0xEF], file_path=\"msg.txt\"):\n        gr.basic_block.__init__(self,\n\
+      \            name=\"custom_message_to_bits\",\n            in_sig=None,\n  \
+      \          out_sig=[np.uint8]\n        )\n        self.preamble = np.array(preamble,\
+      \ dtype=np.uint8)\n        self.file_path = file_path\n        self.chunk_size\
+      \ = 255\n        self.set_output_multiple(8 * (len(self.preamble) + self.chunk_size\
+      \ + 1 + 1))  # Output in bits, including CRC\n        self.chunks = []\n   \
+      \     self.current_chunk_index = 0\n        self.message_port_register_in(pmt.intern(\"\
+      crc_pass\"))\n        self.message_port_register_in(pmt.intern(\"crc_fail\"\
+      ))\n        self.set_msg_handler(pmt.intern(\"crc_pass\"), self.handle_crc_pass)\n\
+      \        self.set_msg_handler(pmt.intern(\"crc_fail\"), self.handle_crc_fail)\n\
+      \        self.message_port_register_out(pmt.intern(\"out\"))\n        self.update_message()\n\
+      \        self.send_initial_chunk()  # Send the first chunk immediately\n\n \
+      \   def update_message(self):\n        try:\n            with open(self.file_path,\
+      \ \"r\") as file:\n                message = file.read().strip()\n         \
+      \   message_bytes = np.frombuffer(message.encode('utf-8'), dtype=np.uint8)\n\
+      \            self.chunks = [self.add_crc(message_bytes[i:i + self.chunk_size])\
+      \ for i in range(0, len(message_bytes), self.chunk_size)]\n        except FileNotFoundError:\n\
+      \            print(\"Message file not found. Using default message.\")\n   \
+      \         default_message = \"Default Message\"\n            message_bytes =\
+      \ np.frombuffer(default_message.encode('utf-8'), dtype=np.uint8)\n         \
+      \   self.chunks = [self.add_crc(message_bytes)]\n\n    def add_crc(self, chunk):\n\
+      \        crc = 0\n        for byte in chunk:\n            crc ^= byte\n    \
+      \        for _ in range(8):\n                if crc & 0x80:\n              \
+      \      crc = (crc << 1) ^ 0x07  # Generator polynomial\n                else:\n\
+      \                    crc <<= 1\n            crc &= 0xFF\n        crc_bytes =\
+      \ np.array([crc], dtype=np.uint8)\n        return np.concatenate((chunk, crc_bytes))\n\
+      \n    def byte_to_bits(self, byte_array):\n        \"\"\"Converts a byte array\
+      \ to a bit array.\"\"\"\n        return np.unpackbits(byte_array)\n\n    def\
+      \ send_initial_chunk(self):\n        if self.current_chunk_index < len(self.chunks):\n\
+      \            chunk_data = pmt.init_u8vector(len(self.chunks[self.current_chunk_index]),\
+      \ self.chunks[self.current_chunk_index])\n            chunk_ready_msg = pmt.cons(pmt.intern(\"\
+      chunk_ready\"), chunk_data)\n            self.message_port_pub(pmt.intern(\"\
+      out\"), chunk_ready_msg)\n            print(f\"Sent initial chunk {self.current_chunk_index}.\"\
+      )\n\n    def general_work(self, input_items, output_items):\n        output\
+      \ = output_items[0]\n\n        if self.current_chunk_index < len(self.chunks):\n\
+      \            chunk = self.chunks[self.current_chunk_index]\n            payload_length\
+      \ = len(chunk) - 1  # Exclude CRC length from payload length\n            header\
+      \ = np.array([payload_length], dtype=np.uint8)\n            packet = np.concatenate((self.preamble,\
+      \ header, chunk))\n            packet_bits = self.byte_to_bits(packet)\n\n \
+      \           output[:len(packet_bits)] = packet_bits\n            produced =\
+      \ len(packet_bits)\n        else:\n            zeros_length = 8 * (len(self.preamble)\
+      \ + self.chunk_size + 1 + 1)  # Including CRC\n            output[:zeros_length]\
+      \ = np.zeros(zeros_length, dtype=np.uint8)\n            produced = zeros_length\n\
+      \n        self.consume_each(0)  # No input to consume\n        return produced\n\
+      \n    def handle_crc_pass(self, msg):\n        if self.current_chunk_index <\
+      \ len(self.chunks) - 1:\n            self.current_chunk_index += 1\n       \
+      \     print(f\"CRC passed for chunk {self.current_chunk_index}. Moving to the\
+      \ next chunk.\")\n            \n            # Send the \"chunk_ready\" message\
+      \ along with the chunk data\n            chunk_data = pmt.init_u8vector(len(self.chunks[self.current_chunk_index]),\
+      \ self.chunks[self.current_chunk_index])\n            chunk_ready_msg = pmt.cons(pmt.intern(\"\
+      chunk_ready\"), chunk_data)\n            self.message_port_pub(pmt.intern(\"\
+      out\"), chunk_ready_msg)\n            \n        else:\n            print(\"\
+      File transmission complete.\")\n            self.current_chunk_index = len(self.chunks)\
+      \  # To ensure transmission stops\n\n    def handle_crc_fail(self, msg):\n \
+      \       print(f\"Resending chunk {self.current_chunk_index} due to CRC failure.\"\
+      )\n"
+    affinity: ''
+    alias: ''
+    comment: ''
+    file_path: '''/home/ben/Documents/test2'''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    preamble: '[0xAB, 0xCD, 0xEF, 0xA1, 0x54, 0xEB, 0xBA, 0xDC, 0xFF]'
+  states:
+    _io_cache: ('custom_message_to_bits', 'custom_message_to_bits', [('preamble',
+      '[171, 205, 239]'), ('file_path', "'msg.txt'")], [('crc_pass', 'message', 1),
+      ('crc_fail', 'message', 1)], [('0', 'byte', 1), ('out', 'message', 1)], '',
+      ['file_path', 'preamble'])
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [32, 1000.0]
+    rotation: 0
+    state: disabled
 - name: epy_block_2
   id: epy_block
   parameters:
@@ -381,52 +511,6 @@ blocks:
     coordinate: [280, 240.0]
     rotation: 0
     state: enabled
-- name: pdu_utils_pdu_delay_0
-  id: pdu_utils_pdu_delay
-  parameters:
-    affinity: ''
-    alias: ''
-    comment: ''
-    debug: 'False'
-    delay: '50'
-    maxoutbuf: '0'
-    minoutbuf: '0'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [784, 380.0]
-    rotation: 0
-    state: enabled
-- name: qtgui_sink_x_1
-  id: qtgui_sink_x
-  parameters:
-    affinity: ''
-    alias: ''
-    bw: '1000000'
-    comment: ''
-    fc: '0'
-    fftsize: '1024'
-    gui_hint: ''
-    maxoutbuf: '0'
-    minoutbuf: '0'
-    name: '""'
-    plotconst: 'True'
-    plotfreq: 'True'
-    plottime: 'True'
-    plotwaterfall: 'True'
-    rate: '10'
-    showports: 'False'
-    showrf: 'False'
-    type: complex
-    wintype: window.WIN_BLACKMAN_hARRIS
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [712, 12.0]
-    rotation: 0
-    state: disabled
 - name: qtgui_time_sink_x_0
   id: qtgui_time_sink_x
   parameters:
@@ -600,14 +684,17 @@ blocks:
 connections:
 - [blocks_char_to_float_0, '0', qtgui_time_sink_x_0, '0']
 - [blocks_head_0, '0', blocks_file_sink_0, '0']
+- [blocks_message_strobe_0, strobe, blocks_message_debug_0, print]
+- [epy_block_0, out, blocks_message_strobe_0, set_msg]
 - [epy_block_1, '0', epy_block_2, '0']
+- [epy_block_1, out, epy_block_2, in]
 - [epy_block_12_0_0, '0', blocks_head_0, '0']
-- [epy_block_12_0_0, extracted_payload, pdu_utils_pdu_delay_0, pdu_in]
+- [epy_block_12_0_0, crc_status, epy_block_1, crc_status]
+- [epy_block_12_0_0, extracted_payload, epy_block_0, in]
 - [epy_block_2, '0', root_raised_cosine_filter_0, '0']
 - [epy_block_2_0, '0', blocks_char_to_float_0, '0']
 - [epy_block_2_0, '0', epy_block_12_0_0, '0']
 - [epy_block_2_0, out, epy_block_12_0_0, in]
-- [pdu_utils_pdu_delay_0, pdu_out, blocks_message_debug_0, print]
 - [root_raised_cosine_filter_0, '0', virtual_sink_0, '0']
 - [root_raised_cosine_filter_0_0, '0', epy_block_2_0, '0']
 - [virtual_source_0, '0', root_raised_cosine_filter_0_0, '0']
