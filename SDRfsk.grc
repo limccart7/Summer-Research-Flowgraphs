@@ -105,7 +105,6 @@ blocks:
     alias: ''
     comment: ''
     en_uvec: 'True'
-    log_level: info
   states:
     bus_sink: false
     bus_source: false
@@ -140,7 +139,6 @@ blocks:
     maxoutbuf: '0'
     minoutbuf: '0'
     mintime: '500.0'
-    name: ''
     type: complex
     vlen: '1'
   states:
@@ -701,4 +699,4 @@ connections:
 
 metadata:
   file_format: 1
-  grc_version: 3.10.10.0
+  grc_version: 3.10.3.0

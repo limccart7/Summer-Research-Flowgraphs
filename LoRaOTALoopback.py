@@ -75,7 +75,7 @@ class LoRaOTALoopback(gr.top_block):
             sf=7,
          ldro_mode=2,frame_zero_padd=1280 )
         self.lora_rx_0 = lora_sdr.lora_sdr_lora_rx( bw=125000, cr=1, has_crc=True, impl_head=False, pay_len=255, samp_rate=samp_rate, sf=7, soft_decoding=True, ldro_mode=2, print_rx=[True,True])
-        self.epy_block_0_0 = epy_block_0_0.payload_writer(filepath="/home/ubuntu/Documents/Summer-Research-Flowgraphs/message_storage.txt")
+        self.epy_block_0_0 = epy_block_0_0.payload_writer(filepath="/home/ubuntu/Desktop/Summer-Research-Flowgraphs/message_storage.txt")
         self.epy_block_0 = epy_block_0.message_prompt()
         self.blocks_message_debug_0 = blocks.message_debug(True)
 

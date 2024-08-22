@@ -3,7 +3,7 @@ import random
 
 def generate_random_ascii_line(length):
     """Generate a string of random ASCII characters with a specified length."""
-    return ''.join(chr(random.randint(32, 126)) for _ in range(length))
+    return ''.join(chr(random.randint(41, 91)) for _ in range(length))
 
 def generate_files(filename_newline, filename_comma, num_lines, line_length):
     """Generate two files: one with each byte on a new line and one with bytes separated by commas."""
@@ -11,12 +11,10 @@ def generate_files(filename_newline, filename_comma, num_lines, line_length):
         for _ in range(num_lines):
             line = generate_random_ascii_line(line_length)
             
-            # Write to the file with each byte on a new line
-            for char in line:
-                file_newline.write(char + '\n')
+            file_newline.write(line + '\n')
             
             # Write to the file with bytes separated by commas
-            file_comma.write(','.join(line) + '\n')
+            file_comma.write(line + ',')
 
 if __name__ == "__main__":
     output_file_newline = 'tx_test_comp.txt'

@@ -1,6 +1,6 @@
 options:
   parameters:
-    author: root
+    author: ubuntu
     catch_exceptions: 'True'
     category: '[GRC Hier Blocks]'
     cmake_opt: ''
@@ -11,7 +11,7 @@ options:
     gen_linking: dynamic
     generate_options: no_gui
     hier_block_src_path: '.:'
-    id: LoRaOTALoopback
+    id: LoRa_Loopback
     max_nouts: '0'
     output_language: python
     placement: (0,0)
@@ -22,7 +22,7 @@ options:
     run_options: prompt
     sizing_mode: fixed
     thread_safe_setters: ''
-    title: LoRa OTA Loopback
+    title: Not titled yet
     window_size: (1000,1000)
   states:
     bus_sink: false
@@ -33,7 +33,24 @@ options:
     state: enabled
 
 blocks:
-- name: freq
+- name: bw
+  id: variable_config
+  parameters:
+    comment: ''
+    config_file: /home/ubuntu/LoRa_Tests/LoRa_config.ini
+    option: bw
+    section: LoRa
+    type: int
+    value: '62500'
+    writeback: None
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [360, 4.0]
+    rotation: 0
+    state: true
+- name: center_freq
   id: variable
   parameters:
     comment: ''
@@ -42,7 +59,43 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [280, 12.0]
+    coordinate: [880, 4.0]
+    rotation: 0
+    state: true
+- name: cr
+  id: variable
+  parameters:
+    comment: ''
+    value: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [528, 4.0]
+    rotation: 0
+    state: true
+- name: has_crc
+  id: variable
+  parameters:
+    comment: ''
+    value: 'True'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [608, 4.0]
+    rotation: 0
+    state: true
+- name: impl_head
+  id: variable
+  parameters:
+    comment: ''
+    value: 'False'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [696, 4.0]
     rotation: 0
     state: true
 - name: samp_rate
@@ -54,9 +107,48 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [184, 12]
+    coordinate: [784, 4.0]
     rotation: 0
-    state: enabled
+    state: true
+- name: sf
+  id: variable_config
+  parameters:
+    comment: ''
+    config_file: /home/ubuntu/LoRa_Tests/LoRa_config.ini
+    option: sf
+    section: LoRa
+    type: int
+    value: '7'
+    writeback: None
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [184, 4.0]
+    rotation: 0
+    state: true
+- name: blocks_file_source_0
+  id: blocks_file_source
+  parameters:
+    affinity: ''
+    alias: ''
+    begin_tag: pmt.PMT_NIL
+    comment: ''
+    file: /home/ubuntu/Desktop/Summer-Research-Flowgraphs/LoRa BER Testing/random_hex_file.txt
+    length: '0'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    offset: '0'
+    repeat: 'False'
+    type: byte
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [16, 324.0]
+    rotation: 0
+    state: true
 - name: blocks_message_debug_0
   id: blocks_message_debug
   parameters:
@@ -68,93 +160,28 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [656, 472.0]
+    coordinate: [704, 464.0]
     rotation: 0
     state: true
-- name: blocks_message_strobe_0
-  id: blocks_message_strobe
+- name: blocks_stream_to_tagged_stream_0
+  id: blocks_stream_to_tagged_stream
   parameters:
     affinity: ''
     alias: ''
     comment: ''
+    len_tag_key: '"packet_len"'
     maxoutbuf: '0'
     minoutbuf: '0'
-    msg: pmt.intern("TEST")
-    period: '2000'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [72, 188.0]
-    rotation: 0
-    state: disabled
-- name: blocks_null_sink_0
-  id: blocks_null_sink
-  parameters:
-    affinity: ''
-    alias: ''
-    bus_structure_sink: '[[0,],]'
-    comment: ''
-    num_inputs: '1'
-    type: complex
+    packet_len: '255'
+    type: byte
     vlen: '1'
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [352, 392.0]
+    coordinate: [240, 348.0]
     rotation: 0
     state: disabled
-- name: blocks_null_source_0
-  id: blocks_null_source
-  parameters:
-    affinity: ''
-    alias: ''
-    bus_structure_source: '[[0,],]'
-    comment: ''
-    maxoutbuf: '0'
-    minoutbuf: '0'
-    num_outputs: '1'
-    type: complex
-    vlen: '1'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [352, 304.0]
-    rotation: 0
-    state: disabled
-- name: epy_block_0
-  id: epy_block
-  parameters:
-    _source_code: "import time\nimport tkinter as tk\nfrom tkinter import simpledialog\n\
-      from gnuradio import gr\nimport pmt\n\nclass message_prompt(gr.sync_block):\n\
-      \    def __init__(self):\n        gr.sync_block.__init__(\n            self,\n\
-      \            name=\"message_prompt\",\n            in_sig=None,\n          \
-      \  out_sig=None,\n        )\n        self.message_port_register_out(pmt.intern(\"\
-      out\"))\n        self.root = tk.Tk()\n        self.root.withdraw()  # Hide the\
-      \ main Tkinter window\n        self.schedule_next_prompt()\n\n    def schedule_next_prompt(self):\n\
-      \        self.root.after(0, self.prompt_for_message)\n\n    def prompt_for_message(self):\n\
-      \        payload = simpledialog.askstring(\"Input\", \"Enter payload:\")\n \
-      \       if payload is not None:\n            message = pmt.intern(payload)\n\
-      \            for _ in range(3):\n                self.message_port_pub(pmt.intern(\"\
-      out\"), message)\n                time.sleep(2)\n        self.schedule_next_prompt()\n\
-      \n    def work(self, input_items, output_items):\n        return len(output_items)\n\
-      \n"
-    affinity: ''
-    alias: ''
-    comment: ''
-    maxoutbuf: '0'
-    minoutbuf: '0'
-  states:
-    _io_cache: ('message_prompt', 'message_prompt', [], [], [('out', 'message', 1)],
-      '', [])
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [56, 256.0]
-    rotation: 0
-    state: true
 - name: epy_block_0_0
   id: epy_block
   parameters:
@@ -184,7 +211,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [648, 596.0]
+    coordinate: [696, 596.0]
     rotation: 0
     state: enabled
 - name: lora_rx_0
@@ -209,39 +236,143 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [336, 436.0]
+    coordinate: [384, 436.0]
     rotation: 0
     state: true
-- name: lora_tx_0
-  id: lora_tx
+- name: lora_sdr_add_crc_0
+  id: lora_sdr_add_crc
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    has_crc: has_crc
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [432, 156.0]
+    rotation: 0
+    state: enabled
+- name: lora_sdr_gray_demap_0
+  id: lora_sdr_gray_demap
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    sf: sf
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [824, 156.0]
+    rotation: 0
+    state: enabled
+- name: lora_sdr_hamming_enc_0
+  id: lora_sdr_hamming_enc
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    cr: cr
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    sf: sf
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [560, 148.0]
+    rotation: 0
+    state: enabled
+- name: lora_sdr_header_0
+  id: lora_sdr_header
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    cr: cr
+    has_crc: has_crc
+    impl_head: impl_head
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [288, 140.0]
+    rotation: 0
+    state: enabled
+- name: lora_sdr_interleaver_0
+  id: lora_sdr_interleaver
   parameters:
     affinity: ''
     alias: ''
     bw: '125000'
     comment: ''
-    cr: '1'
-    frame_zero_padd: '1280'
-    has_crc: 'True'
-    impl_head: 'False'
-    ldro: '2'
+    cr: cr
+    ldro: '0'
     maxoutbuf: '0'
     minoutbuf: '0'
-    samp_rate: '1000000'
-    sf: '7'
+    sf: sf
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [296, 164.0]
+    coordinate: [696, 140.0]
     rotation: 0
-    state: true
+    state: enabled
+- name: lora_sdr_modulate_0
+  id: lora_sdr_modulate
+  parameters:
+    affinity: ''
+    alias: ''
+    bw: bw
+    comment: ''
+    frame_zero_padd: int(20*2**sf*samp_rate/bw)
+    maxoutbuf: '0'
+    minoutbuf: '10000000'
+    preamb_len: '8'
+    samp_rate: samp_rate
+    sf: sf
+    sync_words: '[8,16]'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [976, 140.0]
+    rotation: 0
+    state: enabled
+- name: lora_sdr_whitening_0
+  id: lora_sdr_whitening
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    is_hex: 'False'
+    length_tag_name: '''packet_len'''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    separator: ''','''
+    source_type: file_source
+    use_length_tag: 'False'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [80, 156.0]
+    rotation: 0
+    state: enabled
 - name: soapy_limesdr_sink_0
   id: soapy_limesdr_sink
   parameters:
     affinity: ''
     alias: ''
     bandwidth: '0.0'
-    center_freq: freq
+    center_freq: center_freq
     comment: ''
     dev_args: ''
     freq_correction: '0'
@@ -252,16 +383,16 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [576, 216.0]
+    coordinate: [896, 352.0]
     rotation: 0
-    state: enabled
+    state: true
 - name: soapy_limesdr_source_0
   id: soapy_limesdr_source
   parameters:
     affinity: ''
     alias: ''
     bandwidth: '0.0'
-    center_freq: freq
+    center_freq: center_freq
     comment: ''
     dev_args: ''
     freq_correction: '0'
@@ -274,16 +405,23 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [32, 476.0]
+    coordinate: [80, 476.0]
     rotation: 0
     state: enabled
 
 connections:
-- [blocks_message_strobe_0, strobe, lora_tx_0, in]
-- [epy_block_0, out, lora_tx_0, in]
+- [blocks_file_source_0, '0', blocks_stream_to_tagged_stream_0, '0']
+- [blocks_file_source_0, '0', lora_sdr_whitening_0, '0']
+- [blocks_stream_to_tagged_stream_0, '0', lora_sdr_whitening_0, '0']
 - [lora_rx_0, out, blocks_message_debug_0, print]
 - [lora_rx_0, out, epy_block_0_0, payload]
-- [lora_tx_0, '0', soapy_limesdr_sink_0, '0']
+- [lora_sdr_add_crc_0, '0', lora_sdr_hamming_enc_0, '0']
+- [lora_sdr_gray_demap_0, '0', lora_sdr_modulate_0, '0']
+- [lora_sdr_hamming_enc_0, '0', lora_sdr_interleaver_0, '0']
+- [lora_sdr_header_0, '0', lora_sdr_add_crc_0, '0']
+- [lora_sdr_interleaver_0, '0', lora_sdr_gray_demap_0, '0']
+- [lora_sdr_modulate_0, '0', soapy_limesdr_sink_0, '0']
+- [lora_sdr_whitening_0, '0', lora_sdr_header_0, '0']
 - [soapy_limesdr_source_0, '0', lora_rx_0, '0']
 
 metadata:
