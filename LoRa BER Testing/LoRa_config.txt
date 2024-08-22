@@ -1,0 +1,4 @@
+SF=7
+BW=62500
+CR=5
+file_path="/home/ubuntu/LoRa_Tests/rx_data_7_62500_5.txt"
